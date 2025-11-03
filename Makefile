@@ -13,3 +13,7 @@ format:
 .PHONY: lint
 lint:
 	uv run ruff check
+
+.PHONY: watch
+watch:
+	typst watch thesis/main.typ --open zathura

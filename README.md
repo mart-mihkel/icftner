@@ -6,3 +6,4 @@ Use [uv](https://docs.astral.sh/uv/) for project management.
 - `make edit` - start marimo server
 - `make format` - run formatter
 - `make lint` - run linter
+- `make watch` - typst watch thesis
