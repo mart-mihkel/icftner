@@ -1,26 +1,38 @@
-.PHONY: setup
-setup:
+.PHONY: sync
+sync:
 	uv sync
 
 .PHONY: marimo
-marimo: setup
+marimo: sync
 	uv run marimo edit
 
+.PHONY: test
+test: sync
+	uv run pytest
+
 .PHONY: format
-format: setup
+format: sync
 	uv run ruff format
 
+.PHONY: format-check
+format-check: sync
+	uv run ruff format --check
+
 .PHONY: lint
-lint: setup
+lint: sync
 	uv run ruff check
 
 .PHONY: types
-types: setup
+types: sync
 	uv run ty check
 
 .PHONY: check
-check: setup format lint types
+check: sync format-check lint types
 
-.PHONY: watch
-watch:
+.PHONY: typst
+typst:
+	typst compile typesetting/main.typ
+
+.PHONY: typst-watch
+typst-watch:
 	typst watch typesetting/main.typ --open zathura

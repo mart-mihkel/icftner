@@ -13,3 +13,6 @@ logs/
 
 # Development environment
 .envrc
+
+# Compiled typesetting
+*.pdf
