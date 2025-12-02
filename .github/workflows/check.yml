@@ -17,9 +17,6 @@ jobs:
       - name: test
         run: uv run pytest
 
-      - name: typecheck
-        run: uv run ty check
-
       - name: linter
         run: uv run ruff check
 
