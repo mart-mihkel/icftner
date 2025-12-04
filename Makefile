@@ -1,4 +1,4 @@
-DOCUMENT_VIEWER = "zathura"
+DOCUMENT_VIEWER = zathura
 
 .PHONY: sync
 sync:
@@ -26,7 +26,7 @@ format:
 	uv run ruff format
 
 .PHONY: check
-check: test types lint format
+check: format lint types test
 
 .PHONY: typst
 typst:
