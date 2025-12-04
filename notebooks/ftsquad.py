@@ -8,11 +8,7 @@ with app.setup:
     from pathlib import Path
 
     import torch
-    from transformers import (
-        ModernBertForQuestionAnswering,
-        PreTrainedTokenizerFast,
-        default_data_collator,
-    )
+    from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 
     from cptlms.squad import Squad
     from cptlms.trainer import Trainer
@@ -23,27 +19,21 @@ with app.setup:
 
 @app.cell
 def _():
-    _pretrained_model = "jhu-clsp/mmBERT-small"
-    _tokenizer = PreTrainedTokenizerFast.from_pretrained(_pretrained_model)
-    squad = Squad(_tokenizer)
-    model = ModernBertForQuestionAnswering.from_pretrained(_pretrained_model)
-    return model, squad
+    pretrained_model = "jhu-clsp/mmBERT-small"
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+    bert = AutoModelForQuestionAnswering.from_pretrained(pretrained_model)
+    squad = Squad(tokenizer)
+    return bert, squad
 
 
 @app.cell
-def _(model, squad):
-    def _drop_offset_mappings(batch):
-        for item in batch:
-            item.pop("offset_mapping", None)
-
-        return default_data_collator(batch)
-
+def _(bert, squad):
     trainer = Trainer(
-        model=model,
-        epochs=10,
-        qa_dataset=squad,
-        collate_fn=_drop_offset_mappings,
+        model=bert,
+        epochs=5,
         batch_size=32,
+        qa_dataset=squad,
+        collate_fn=squad.default_collate_fn,
         out_dir=Path("out/mmbert-small-ft"),
     )
     return (trainer,)
@@ -52,12 +42,6 @@ def _(model, squad):
 @app.cell
 def _(trainer):
     trainer.train()
-    return
-
-
-@app.cell
-def _(trainer):
-    trainer.telemetry
     return
 
 
