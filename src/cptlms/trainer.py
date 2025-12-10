@@ -164,7 +164,8 @@ class Trainer:
         torch.save(self.model.state_dict(), save_path)
 
     def _save_telemetry(self):
+        os.makedirs(self.out_dir, exist_ok=True)
         telem_path = self.out_dir / "telemetry.json"
-        logger.info("save model telemetry to %s", telem_path)
+        logger.info("save telemetry to %s", telem_path)
         with open(telem_path, "w") as f:
             json.dump(self.telemetry, f)

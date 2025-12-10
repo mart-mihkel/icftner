@@ -5,6 +5,7 @@ from typing import TypedDict, cast
 
 import evaluate
 import numpy as np
+from torch import Tensor
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
@@ -283,7 +284,7 @@ class Squad:
         return answers
 
     @staticmethod
-    def default_collate_fn(batch: list[SquadTrainRecord | SquadValRecord]):
+    def collate_fn(batch: list[SquadTrainRecord | SquadValRecord]) -> dict[str, Tensor]:
         for item in batch:
             item.pop("token_type_ids", None)
             item.pop("offset_mapping", None)

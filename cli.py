@@ -2,10 +2,20 @@ import logging
 
 import typer
 
-logging.basicConfig(level="INFO")
+app = typer.Typer(add_completion=False)
 logger = logging.getLogger("cptlms")
 
-app = typer.Typer(add_completion=False)
+
+def _setup_logging(out_dir: str):
+    import sys
+    from datetime import datetime
+    from logging import FileHandler, StreamHandler
+
+    timestamp = datetime.now().strftime("%d%m%Y-%H%M%S")
+    log_path = f"{out_dir}/logs-{timestamp}.log"
+    handlers = [StreamHandler(sys.stdout), FileHandler(log_path)]
+    logging.basicConfig(level=logging.INFO, handlers=handlers)
+    logger.info("set logger file handler to %s", log_path)
 
 
 @app.command()
@@ -23,11 +33,13 @@ def fine_tune(
     from cptlms.squad import Squad
     from cptlms.trainer import Trainer
 
+    _setup_logging(out_dir=out_dir)
     torch.set_float32_matmul_precision("high")
 
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
-    model = AutoModelForQuestionAnswering.from_pretrained(pretrained_model)
     squad = Squad(tokenizer)
+
+    model = AutoModelForQuestionAnswering.from_pretrained(pretrained_model)
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -38,8 +50,8 @@ def fine_tune(
         model=model,
         epochs=epochs,
         qa_dataset=squad,
-        collate_fn=Squad.default_collate_fn,
         batch_size=batch_size,
+        collate_fn=Squad.collate_fn,
         out_dir=Path(out_dir),
     )
 
@@ -63,12 +75,14 @@ def p_tune(
     from cptlms.squad import Squad
     from cptlms.trainer import Trainer
 
+    _setup_logging(out_dir=out_dir)
     torch.set_float32_matmul_precision("high")
 
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+    squad = Squad(tokenizer)
+
     base_bert = AutoModelForQuestionAnswering.from_pretrained(pretrained_model)
     pt_bert = PTuningBert(bert=base_bert, num_virtual_tokens=num_virtual_tokens)
-    squad = Squad(tokenizer)
 
     total_params = sum(p.numel() for p in pt_bert.parameters())
     trainable_params = sum(p.numel() for p in pt_bert.parameters() if p.requires_grad)
@@ -79,8 +93,8 @@ def p_tune(
         model=pt_bert,
         epochs=epochs,
         qa_dataset=squad,
-        collate_fn=Squad.default_collate_fn,
         batch_size=batch_size,
+        collate_fn=Squad.collate_fn,
         out_dir=Path(out_dir),
     )
 
