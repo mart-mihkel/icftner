@@ -58,7 +58,7 @@ class Squad:
     ):
         logger.info("init squad")
 
-        data = load_dataset("squad", split={"train": "train[:200]", "validation": "validation[:200]"})
+        data = load_dataset("squad")
         assert isinstance(data, DatasetDict)
 
         self.metric = evaluate.loading.load("squad")

@@ -17,13 +17,14 @@ class PTuningBert(Module):
         self,
         bert: BertForQuestionAnswering,
         num_virtual_tokens: int = 32,
+        train_new_layers: bool = True,
     ) -> None:
         super().__init__()
 
         self.num_virtual_tokens = num_virtual_tokens
 
         self.bert = bert
-        self._freeze_params(self.bert)
+        self._freeze_params(self.bert, train_new_layers)
 
         bert_embedding = bert.get_input_embeddings()
         assert isinstance(bert_embedding, Embedding)
@@ -80,7 +81,14 @@ class PTuningBert(Module):
         return out
 
     @staticmethod
-    def _freeze_params(bert: BertForQuestionAnswering):
+    def _freeze_params(
+        bert: BertForQuestionAnswering,
+        train_new_layers: bool = True,
+    ):
         logger.info("freeze bert parameters")
-        for param in bert.parameters():
+        for name, param in bert.named_parameters():
+            if train_new_layers and "qa_outputs" in name:
+                logger.info("skip %s", name)
+                continue
+
             param.requires_grad = False

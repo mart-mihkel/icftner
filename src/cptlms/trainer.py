@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from typing import Callable, TypedDict
 
-import numpy as np
 import torch
 from accelerate import Accelerator
 from torch.nn.modules.module import Module
@@ -23,8 +22,8 @@ logger = logging.getLogger("cptlms")
 class Telemetry(TypedDict):
     epoch: int
     train_loss: float
-    val_f1: float
-    val_exact_match: float
+    eval_f1: float
+    eval_exact_match: float
 
 
 class Trainer:
@@ -97,18 +96,18 @@ class Trainer:
 
     def _epoch(self, epoch: int):
         train_loss = self._train()
-        val_metrics = self._eval()
+        eval_metrics = self._eval()
 
-        logger.info("training loss:   %.4f", train_loss)
-        logger.info("val exact match: %.4f", val_metrics["exact_match"])
-        logger.info("val f1:          %.4f", val_metrics["f1"])
+        logger.info("train loss: %.4f", train_loss)
+        logger.info("eval em:    %.4f", eval_metrics["exact_match"])
+        logger.info("eval f1:    %.4f", eval_metrics["f1"])
 
         self.telemetry.append(
             {
                 "epoch": epoch,
                 "train_loss": train_loss,
-                "val_exact_match": val_metrics["exact_match"],
-                "val_f1": val_metrics["f1"],
+                "eval_exact_match": eval_metrics["exact_match"],
+                "eval_f1": eval_metrics["f1"],
             }
         )
 

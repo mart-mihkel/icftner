@@ -67,6 +67,7 @@ def p_tune(
     epochs: int = 20,
     batch_size: int = 32,
     num_virtual_tokens: int = 32,
+    train_new_layers: bool = True,
 ):
     from pathlib import Path
 
@@ -84,7 +85,11 @@ def p_tune(
     squad = Squad(tokenizer)
 
     base_bert = AutoModelForQuestionAnswering.from_pretrained(pretrained_model)
-    pt_bert = PTuningBert(bert=base_bert, num_virtual_tokens=num_virtual_tokens)
+    pt_bert = PTuningBert(
+        bert=base_bert,
+        num_virtual_tokens=num_virtual_tokens,
+        train_new_layers=train_new_layers,
+    )
 
     total_params = sum(p.numel() for p in pt_bert.parameters())
     trainable_params = sum(p.numel() for p in pt_bert.parameters() if p.requires_grad)
