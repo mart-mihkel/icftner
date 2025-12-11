@@ -26,7 +26,7 @@ format:
 	@uv run ruff format
 
 .PHONY: check
-check: format lint test
+check: format lint types test
 
 .PHONY: typst
 typst:

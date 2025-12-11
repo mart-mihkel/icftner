@@ -205,7 +205,7 @@ class Squad:
             {"id": ex["id"], "answers": ex["answers"]} for ex in self.val
         ]
 
-        metrics = self.metric.compute(
+        metrics = self.metric.compute(  # type: ignore[missing-argument]  # false positive
             predictions=predicted_answers,
             references=theoretical_answers,
         )
@@ -284,6 +284,7 @@ class Squad:
     @staticmethod
     def collate_fn(batch: list[SquadTrainRecord | SquadValRecord]) -> dict[str, Tensor]:
         for item in batch:
+            item = cast(dict, item)
             item.pop("token_type_ids", None)
             item.pop("offset_mapping", None)
             item.pop("example_id", None)

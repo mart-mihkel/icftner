@@ -22,7 +22,7 @@ def _setup_logging(out_dir: str):
 
 @app.command()
 def fine_tune(
-    pretrained_model: str = "bert-base-uncased",
+    pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/ft",
     epochs: int = 5,
     batch_size: int = 32,
@@ -62,7 +62,7 @@ def fine_tune(
 
 @app.command()
 def p_tune(
-    pretrained_model: str = "bert-base-uncased",
+    pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/pt",
     epochs: int = 20,
     batch_size: int = 32,

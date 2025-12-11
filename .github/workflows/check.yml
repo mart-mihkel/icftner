@@ -14,11 +14,14 @@ jobs:
       - name: sync
         run: uv sync --locked
 
-      - name: test
-        run: uv run pytest
+      - name: format
+        run: uv run ruff format --check
 
       - name: linter
         run: uv run ruff check
 
-      - name: format
-        run: uv run ruff format --check
+      - name: typecheck
+        run: uv run ty check
+
+      - name: test
+        run: uv run pytest

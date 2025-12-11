@@ -21,7 +21,7 @@ class PTuningBert(Module):
     ) -> None:
         super().__init__()
 
-        self.num_virtual_tokens = num_virtual_tokens
+        self.num_virtual_tokens = num_virtual_tokens  # type: ignore[unresolved-attribute]  # false positive
 
         self.bert = bert
         self._freeze_params(self.bert, train_new_layers)
