@@ -20,6 +20,17 @@ def _setup_logging(out_dir: str):
     logger.info("set logger file handler to %s", log_path)
 
 
+def _save_params(out_dir: str, **kwargs):
+    import os
+    import json
+
+    os.makedirs(out_dir, exist_ok=True)
+    params_path = f"{out_dir}/cli-params.json"
+    logger.info("save cli input params to %s", params_path)
+    with open(params_path, "w") as f:
+        json.dump(kwargs, f)
+
+
 @app.command()
 def fine_tune(
     pretrained_model: str = "distilbert-base-uncased",
@@ -36,6 +47,13 @@ def fine_tune(
     from cptlms.trainer import Trainer
 
     _setup_logging(out_dir=out_dir)
+    _save_params(
+        epochs=epochs,
+        out_dir=out_dir,
+        batch_size=batch_size,
+        pretrained_model=pretrained_model,
+    )
+
     torch.set_float32_matmul_precision("high")
 
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
@@ -79,6 +97,15 @@ def p_tune(
     from cptlms.trainer import Trainer
 
     _setup_logging(out_dir=out_dir)
+    _save_params(
+        epochs=epochs,
+        out_dir=out_dir,
+        batch_size=batch_size,
+        pretrained_model=pretrained_model,
+        train_new_layers=train_new_layers,
+        num_virtual_tokens=num_virtual_tokens,
+    )
+
     torch.set_float32_matmul_precision("high")
 
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
