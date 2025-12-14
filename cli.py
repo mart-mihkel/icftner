@@ -1,17 +1,18 @@
+import json
 import logging
-from typing import Literal
+import os
+import sys
+from logging import FileHandler, StreamHandler
+from pathlib import Path
+from typing import Any, Literal
 
-import typer
+from typer import Context, Typer
 
-app = typer.Typer(add_completion=False)
+app = Typer(add_completion=False)
 logger = logging.getLogger("cptlms")
 
 
 def _setup_logging(out_dir: str):
-    import os
-    import sys
-    from logging import FileHandler, StreamHandler
-
     os.makedirs(out_dir, exist_ok=True)
     log_path = f"{out_dir}/logs.log"
     handlers = [StreamHandler(sys.stdout), FileHandler(log_path)]
@@ -19,21 +20,19 @@ def _setup_logging(out_dir: str):
     logger.info("set logger file handler to %s", log_path)
 
 
-def _save_params(out_dir: str, **kwargs):
-    import json
-    import os
-
+def _save_params(out_dir: str, params: dict[str, Any]):
     os.makedirs(out_dir, exist_ok=True)
     params_path = f"{out_dir}/cli-params.json"
     logger.info("save cli input params to %s", params_path)
     with open(params_path, "w") as f:
-        json.dump(kwargs, f)
+        json.dump(params, f)
 
 
 @app.command(
     help="Fine tune a pretrained bert model for question answering on SQuAD dataset"
 )
 def fine_tune_bert_squad(
+    ctx: Context,
     pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/finetune-squad",
     epochs: int = 20,
@@ -41,8 +40,6 @@ def fine_tune_bert_squad(
     train_split: str = "train",
     val_split: str = "validation",
 ):
-    from pathlib import Path
-
     import torch
     from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 
@@ -50,14 +47,7 @@ def fine_tune_bert_squad(
     from cptlms.trainer import Trainer
 
     _setup_logging(out_dir=out_dir)
-    _save_params(
-        epochs=epochs,
-        out_dir=out_dir,
-        batch_size=batch_size,
-        eval_split=val_split,
-        train_split=train_split,
-        pretrained_model=pretrained_model,
-    )
+    _save_params(out_dir=out_dir, params=ctx.params)
 
     torch.set_float32_matmul_precision("high")
 
@@ -87,6 +77,7 @@ def fine_tune_bert_squad(
     help="P-tune a pretrained bert model for question answering on SQuAD dataset"
 )
 def p_tune_bert_squad(
+    ctx: Context,
     pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/ptune-squad",
     epochs: int = 20,
@@ -98,8 +89,6 @@ def p_tune_bert_squad(
     train_split: str = "train",
     val_split: str = "validation",
 ):
-    from pathlib import Path
-
     import torch
     from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 
@@ -108,18 +97,7 @@ def p_tune_bert_squad(
     from cptlms.trainer import Trainer
 
     _setup_logging(out_dir=out_dir)
-    _save_params(
-        epochs=epochs,
-        out_dir=out_dir,
-        batch_size=batch_size,
-        eval_split=val_split,
-        train_split=train_split,
-        pretrained_model=pretrained_model,
-        train_new_layers=train_new_layers,
-        num_virtual_tokens=num_virtual_tokens,
-        encoder_hidden_size=encoder_hidden_size,
-        encoder_reparam_type=encoder_reparam_type,
-    )
+    _save_params(out_dir=out_dir, params=ctx.params)
 
     torch.set_float32_matmul_precision("high")
 
