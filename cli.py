@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from typer import Context, Typer
 
+
 app = Typer(add_completion=False)
 logger = logging.getLogger("cptlms")
 
@@ -77,7 +78,7 @@ def finetune_bert_squad(
         logging_steps=500,
         num_train_epochs=epochs,
         eval_strategy="steps",
-        eval_steps=500,
+        eval_steps=5000,
         save_strategy="epoch",
         fp16=True,
         auto_find_batch_size=True,
@@ -152,7 +153,7 @@ def ptune_bert_squad(
         logging_steps=500,
         num_train_epochs=epochs,
         eval_strategy="steps",
-        eval_steps=500,
+        eval_steps=5000,
         save_strategy="epoch",
         fp16=True,
         auto_find_batch_size=True,
@@ -176,7 +177,7 @@ def ptune_bert_multinerd(
     ctx: Context,
     pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/pt-multinerd",
-    epochs: int = 20,
+    epochs: int = 5,
     num_virtual_tokens: int = 32,
     train_new_layers: bool = True,
     encoder_hidden_size: int = 128,
@@ -205,6 +206,7 @@ def ptune_bert_multinerd(
         tokenize_multinerd_prompted,
     )
     from cptlms.models.bert import PTuningBertSequenceClassification
+    from cptlms.datasets.multinerd import compute_multinerd_prompted_metrics
 
     _setup_logging(out_dir=out_dir)
     _save_params(out_dir=out_dir, params=ctx.params)
@@ -269,7 +271,7 @@ def ptune_bert_multinerd(
         logging_steps=500,
         num_train_epochs=epochs,
         eval_strategy="steps",
-        eval_steps=500,
+        eval_steps=5000,
         save_strategy="epoch",
         fp16=True,
         auto_find_batch_size=True,
@@ -282,6 +284,7 @@ def ptune_bert_multinerd(
         train_dataset=train_tokenized,
         eval_dataset=eval_tokenized,
         data_collator=data_collator,
+        compute_metrics=compute_multinerd_prompted_metrics,
     )
 
     trainer.train()

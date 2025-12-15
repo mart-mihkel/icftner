@@ -154,5 +154,24 @@ def _(tokenizer, train):
     return
 
 
+@app.cell
+def _(train):
+    from collections import defaultdict
+
+    counts = defaultdict(lambda: 0)
+    for tags in train["ner_tags"]:
+        for t in tags:
+            counts[t] += 1
+
+    counts
+    return (counts,)
+
+
+@app.cell
+def _(counts):
+    counts[1] / counts[0]
+    return
+
+
 if __name__ == "__main__":
     app.run()

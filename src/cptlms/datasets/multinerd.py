@@ -1,13 +1,13 @@
 import logging
-import os
-from pathlib import Path
+import random
 from typing import Literal, TypedDict
 
+import numpy as np
 from datasets.arrow_dataset import Dataset
-from datasets.load import load_from_disk
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from transformers import BatchEncoding
-from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
+from transformers.trainer_utils import EvalPrediction
 
 logger = logging.getLogger("cptlms")
 
@@ -177,16 +177,8 @@ def tokenize_multinerd(
 def tokenize_multinerd_prompted(
     tokenizer: PreTrainedTokenizerFast,
     data: Dataset,
-    cache_path: Path | None = None,
     with_system_prompt: bool = True,
-    force_retokenize: bool = False,
 ) -> Dataset:
-    if not force_retokenize and cache_path is not None and cache_path.exists():
-        logger.info("load tokenized multinerd from %s", cache_path)
-        data_cached = load_from_disk(cache_path)
-        assert isinstance(data_cached, Dataset)
-        return data_cached
-
     sep_token = tokenizer.special_tokens_map["sep_token"]
     cls_token = tokenizer.special_tokens_map["cls_token"]
 
@@ -208,6 +200,10 @@ def tokenize_multinerd_prompted(
         prompts = []
         for tokens, tags in zip(batch["tokens"], batch["ner_tags"]):
             for token, tag in zip(tokens, tags):
+                # TODO: parameterize, document?
+                if tag == 0 and random.random() > 0.02:
+                    continue
+
                 prompt_tokens = _prepare_prompt_bert(
                     tokens=tokens,
                     target_token=token,
@@ -228,30 +224,22 @@ def tokenize_multinerd_prompted(
         tokenized["labels"] = labels
         return tokenized
 
-    data_tokenized = data.map(
+    return data.map(
         _tokenize,
         batched=True,
         remove_columns=data.column_names,
     )
 
-    if cache_path is not None:
-        logging.info("save tokenized multinerd to %s", cache_path)
-        os.makedirs(cache_path, exist_ok=True)
-        data_tokenized.save_to_disk(cache_path)
 
-    return data_tokenized
-
-
-def compute_multinerd_prompted_metrics(
-    pred: SequenceClassifierOutput,
-) -> MultinerdMetrics:
-    # TODO: implement
-    return MultinerdMetrics(
-        accuracy=0,
-        precision=0,
-        recall=0,
-        f1=0,
-    )
+def compute_multinerd_prompted_metrics(eval_pred: EvalPrediction) -> dict[str, float]:
+    logits, labels = eval_pred
+    preds = np.argmax(logits, axis=-1)
+    return {
+        "accuracy": accuracy_score(labels, preds),
+        "precision": precision_score(labels, preds, average="macro"),
+        "recall": recall_score(labels, preds, average="macro"),
+        "f1": f1_score(labels, preds, average="macro"),
+    }
 
 
 def _prepare_prompt_bert(
