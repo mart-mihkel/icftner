@@ -138,13 +138,13 @@ class PTuningBertSequenceClassification(Module):
     ) -> SequenceClassifierOutput:
         batch_size = input_ids.size(0)
 
+        bert_embeds: Annotated[Tensor, "batch seq token"] = (
+            self.bert.get_input_embeddings()(input_ids)
+        )
+
         virtual_embeds: Annotated[Tensor, "batch virtual token"] = (
             self.prompt_encoder().expand(batch_size, -1, -1)
         )
-
-        bert_embedding = self.bert.get_input_embeddings()
-        assert isinstance(bert_embedding, Embedding)
-        bert_embeds: Annotated[Tensor, "batch seq token"] = bert_embedding(input_ids)
 
         virtual_attention: Annotated[Tensor, "batch virtual"] = torch.ones(
             batch_size,
@@ -153,11 +153,18 @@ class PTuningBertSequenceClassification(Module):
             dtype=attention_mask.dtype,
         )
 
-        out = self.bert(
-            inputs_embeds=torch.cat([virtual_embeds, bert_embeds], dim=1),
-            attention_mask=torch.cat([virtual_attention, attention_mask], dim=1),
+        cls_embeds: Annotated[Tensor, "batch 1 token"] = bert_embeds[:, :1, :]
+        seq_embeds: Annotated[Tensor, "batch seq-1 token"] = bert_embeds[:, 1:, :]
+
+        cls_attention: Annotated[Tensor, "batch 1"] = attention_mask[:, :1]
+        seq_attention: Annotated[Tensor, "batch seq-1"] = attention_mask[:, 1:]
+
+        inputs_embeds = torch.cat([cls_embeds, virtual_embeds, seq_embeds], dim=1)
+        attention_mask = torch.cat(
+            [cls_attention, virtual_attention, seq_attention], dim=1
         )
 
+        out = self.bert(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
         assert isinstance(out, SequenceClassifierOutput)
 
         out_logits = out.logits
