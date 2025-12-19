@@ -10,7 +10,7 @@ from transformers import PreTrainedTokenizerFast
 from transformers.data.data_collator import default_data_collator
 from transformers.tokenization_utils_base import BatchEncoding
 
-logger = logging.getLogger("cptlms")
+logger = logging.getLogger(__name__)
 squad_metric = evaluate.loading.load("squad")
 
 

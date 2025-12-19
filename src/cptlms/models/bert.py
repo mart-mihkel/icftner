@@ -14,7 +14,7 @@ from transformers.models.bert.modeling_bert import BertForSequenceClassification
 
 from cptlms.models.prompt_encoder import EncoderReparameterizationType, PromptEncoder
 
-logger = logging.getLogger("cptlms")
+logger = logging.getLogger(__name__)
 
 
 class PTuningBertQuestionAnswering(Module):

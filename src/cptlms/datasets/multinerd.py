@@ -9,7 +9,7 @@ from transformers import BatchEncoding
 from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 from transformers.trainer_utils import EvalPrediction
 
-logger = logging.getLogger("cptlms")
+logger = logging.getLogger(__name__)
 
 
 type MultinerdLang = Literal[
@@ -147,14 +147,10 @@ def tokenize_multinerd(
 ) -> Dataset:
     def _tokenize(batch: MultinerdBatch) -> BatchEncoding:
         """
-        Args:
-            batch (MultinerdBatch)
-
-        Returns:
-            BatchEncoding:
-                input_ids: list[list[int]]
-                attention_mask: list[list[int]]
-                labels: list[list[int]]
+        :return: BatchEncoding with data
+            input_ids: list[list[int]]
+            attention_mask: list[list[int]]
+            labels: list[list[int]]
         """
         tokenized = tokenizer(
             batch["tokens"],
@@ -177,8 +173,14 @@ def tokenize_multinerd(
 def tokenize_multinerd_prompted(
     tokenizer: PreTrainedTokenizerFast,
     data: Dataset,
-    with_system_prompt: bool = True,
+    system_prompt_tokens: list[str] = [],
+    drop_other_tag_prob: float = 0.98,
 ) -> Dataset:
+    """
+    :param drop_other_tag_prob: There are disproportionately more 'O' NER tags
+        in the MultiNERD dataset, drop an example with target token 'O' using
+        this probability.
+    """
     sep_token = tokenizer.special_tokens_map["sep_token"]
     cls_token = tokenizer.special_tokens_map["cls_token"]
 
@@ -187,29 +189,24 @@ def tokenize_multinerd_prompted(
 
     def _tokenize(batch: MultinerdBatch) -> BatchEncoding:
         """
-        Args:
-            batch (MultinerdBatch)
-
-        Returns:
-            BatchEncoding:
-                input_ids: list[list[int]]
-                attention_mask: list[list[int]]
-                labels: list[int]
+        :return: BatchEncoding with data
+            input_ids: list[list[int]]
+            attention_mask: list[list[int]]
+            labels: list[int]
         """
         labels = []
         prompts = []
         for tokens, tags in zip(batch["tokens"], batch["ner_tags"]):
             for token, tag in zip(tokens, tags):
-                # TODO: parameterize, document?
-                if tag == 0 and random.random() > 0.02:
+                if tag == 0 and random.random() < drop_other_tag_prob:
                     continue
 
                 prompt_tokens = _prepare_prompt_bert(
-                    tokens=tokens,
                     target_token=token,
+                    tokens=tokens,
+                    system_tokens=system_prompt_tokens,
                     sep_token=sep_token,
                     cls_token=cls_token,
-                    with_system_prompt=with_system_prompt,
                 )
 
                 prompts.append(prompt_tokens)
@@ -251,24 +248,17 @@ def compute_multinerd_prompted_metrics(eval_pred: EvalPrediction) -> dict[str, f
 
 
 def _prepare_prompt_bert(
-    tokens: list[str],
     target_token: str,
+    tokens: list[str],
+    system_tokens: list[str],
     sep_token: str = "[SEP]",
     cls_token: str = "[CLS]",
-    with_system_prompt: bool = True,
 ) -> list[str]:
-    system_prompt = (
-        "Task : Determine the named entity tag . Question: What is the NER tag"
-        " of <word> in the sentence <sentence> ? Possible tags :".split()
-        + list(MULTINERD_ID2TAG.values())
-    )
+    if len(system_tokens) > 0:
+        system_tokens.append(sep_token)
 
     return (
-        [cls_token]
-        + (system_prompt if with_system_prompt else [])
-        + [sep_token, "<word>", target_token, sep_token, "<sentence>"]
-        + tokens
-        + [sep_token]
+        [cls_token] + system_tokens + [target_token, sep_token] + tokens + [sep_token]
     )
 
 

@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 from torch.nn import LSTM, Embedding, Linear, Module, ReLU, Sequential
 
-logger = logging.getLogger("cptlms")
+logger = logging.getLogger(__name__)
 
 type EncoderReparameterizationType = Literal["emb", "mlp", "lstm"]
 
