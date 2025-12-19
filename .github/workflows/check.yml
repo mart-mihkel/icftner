@@ -14,6 +14,9 @@ jobs:
       - name: sync
         run: uv sync --locked
 
+      - name: build
+        run: uv pip install .
+
       - name: format
         run: uv run ruff format --check
 
