@@ -6,9 +6,9 @@ from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
-from cptlms.datasets.squad import squad_collate_fn, tokenize_squad
-from cptlms.models.bert import PTuningBertQuestionAnswering
-from cptlms.models.prompt_encoder import EncoderReparameterizationType
+from icftner.datasets.squad import squad_collate_fn, tokenize_squad
+from icftner.models.bert import PTuningBertQuestionAnswering
+from icftner.models.prompt_encoder import EncoderReparameterizationType
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from cptlms.datasets.multinerd import _prepare_prompt_bert
+from icftner.datasets.multinerd import _prepare_prompt_bert
 
 
 def test_prepare_prompt_bert():

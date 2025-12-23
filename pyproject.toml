@@ -1,7 +1,7 @@
 [project]
-name = "cptlms"
+name = "icftner"
 version = "0.1.0"
-description = "Continuous Prompt Tuning in Language Models"
+description = "In-Context Fine-Tuning for NER with Language Models"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

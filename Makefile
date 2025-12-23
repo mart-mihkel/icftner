@@ -1,12 +1,10 @@
 TB_LOG_DIR = out
+NOTEBOOK_DIR = notebooks
 DOCUMENT_VIEWER = zathura
 
-sync:
+install:
 	uv sync
 	uv pip install --editable .
-
-marimo:
-	uv run marimo edit notebooks
 
 test:
 	@uv run pytest
@@ -22,11 +20,14 @@ format:
 
 check: format lint types test
 
-tensorboard:
-	uv run tensorboard --logdir $(TB_LOG_DIR)
+marimo:
+	uv run marimo edit $(NOTEBOOK_DIR)
 
 typst:
 	typst watch typesetting/main.typ --open $(DOCUMENT_VIEWER)
 
+tensorboard:
+	uv run tensorboard --logdir $(TB_LOG_DIR)
+
 rsync:
-	rsync -r --exclude-from '.gitignore' . $(REMOTE):git/cptlms
+	rsync -r --exclude-from '.gitignore' . $(REMOTE):git/icftner

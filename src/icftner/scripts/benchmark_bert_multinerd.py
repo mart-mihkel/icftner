@@ -1,6 +1,5 @@
 import logging
 
-
 from datasets.arrow_dataset import Dataset
 from datasets.load import load_dataset
 from datasets.utils.info_utils import VerificationMode
@@ -14,7 +13,7 @@ from transformers.models.auto.modeling_auto import (
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
-from cptlms.datasets.multinerd import (
+from icftner.datasets.multinerd import (
     MULTINERD_ID2TAG,
     MULTINERD_TAG2ID,
     compute_multinerd_prompted_metrics,
@@ -28,19 +27,16 @@ logger = logging.getLogger(__name__)
 def main(
     pretrained_model: str,
     out_dir: str,
-    epochs: int,
     english_only: bool,
-    train_split: str,
-    eval_split: str,
+    test_split: str,
 ):
     logger.info("load multinerd")
-    train, eval = load_dataset(
+    eval = load_dataset(
         "Babelscape/multinerd",
-        split=[train_split, eval_split],
+        split=test_split,
         verification_mode=VerificationMode.NO_CHECKS,
     )
 
-    assert isinstance(train, Dataset)
     assert isinstance(eval, Dataset)
 
     logger.info("load tokenizer")
@@ -48,12 +44,20 @@ def main(
 
     if english_only:
         logger.info("filter multinerd english")
-        train = train.filter(filter_multinerd_english, batched=True)
         eval = eval.filter(filter_multinerd_english, batched=True)
 
     logger.info("tokenize multinerd prompted")
-    train_tokenized = tokenize_multinerd_prompted(tokenizer=tokenizer, data=train)
-    eval_tokenized = tokenize_multinerd_prompted(tokenizer=tokenizer, data=eval)
+    system_tokens = (
+        "Task : Determine the named entity tag . Question: What is the NER tag"
+        " of the given worn in the following sentence ? Possible tags :".split()
+        + list(MULTINERD_ID2TAG.values())
+    )
+
+    eval_tokenized = tokenize_multinerd_prompted(
+        tokenizer=tokenizer,
+        data=eval,
+        system_prompt_tokens=system_tokens,  # type: ignore
+    )
 
     logger.info("load %s", pretrained_model)
     bert = AutoModelForSequenceClassification.from_pretrained(
@@ -68,12 +72,6 @@ def main(
         output_dir=out_dir,
         overwrite_output_dir=True,
         logging_dir=f"{out_dir}/tensorboard",
-        logging_steps=5000,
-        report_to="tensorboard",
-        num_train_epochs=epochs,
-        eval_strategy="steps",
-        eval_steps=10000,
-        save_strategy="epoch",
         auto_find_batch_size=True,
         fp16=True,
     )
@@ -82,10 +80,9 @@ def main(
     trainer = Trainer(
         bert,
         args=args,
-        train_dataset=train_tokenized,
         eval_dataset=eval_tokenized,
         data_collator=data_collator,
         compute_metrics=compute_multinerd_prompted_metrics,
     )
 
-    trainer.train()
+    trainer.evaluate()

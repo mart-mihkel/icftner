@@ -6,7 +6,7 @@ from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
-from cptlms.datasets.squad import squad_collate_fn, tokenize_squad
+from icftner.datasets.squad import squad_collate_fn, tokenize_squad
 
 logger = logging.getLogger(__name__)
 

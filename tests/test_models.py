@@ -1,4 +1,4 @@
-from cptlms.models.prompt_encoder import PromptEncoder
+from icftner.models.prompt_encoder import PromptEncoder
 
 
 def test_prompt_encoder_emb():

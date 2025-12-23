@@ -1,5 +1,6 @@
 import logging
 
+
 from datasets.arrow_dataset import Dataset
 from datasets.load import load_dataset
 from datasets.utils.info_utils import VerificationMode
@@ -13,15 +14,13 @@ from transformers.models.auto.modeling_auto import (
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
-from cptlms.datasets.multinerd import (
+from icftner.datasets.multinerd import (
     MULTINERD_ID2TAG,
     MULTINERD_TAG2ID,
     compute_multinerd_prompted_metrics,
     filter_multinerd_english,
     tokenize_multinerd_prompted,
 )
-from cptlms.models.bert import PTuningBertSequenceClassification
-from cptlms.models.prompt_encoder import EncoderReparameterizationType
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +29,6 @@ def main(
     pretrained_model: str,
     out_dir: str,
     epochs: int,
-    num_virtual_tokens: int,
-    train_new_layers: bool,
-    encoder_hidden_size: int,
-    encoder_reparam_type: EncoderReparameterizationType,
     english_only: bool,
     train_split: str,
     eval_split: str,
@@ -68,20 +63,6 @@ def main(
         label2id=MULTINERD_TAG2ID,
     )
 
-    logger.info("init ptunging %s", pretrained_model)
-    pt_bert = PTuningBertSequenceClassification(
-        bert=bert,
-        num_virtual_tokens=num_virtual_tokens,
-        train_new_layers=train_new_layers,
-        encoder_hidden_size=encoder_hidden_size,
-        encoder_reparam_type=encoder_reparam_type,
-    )
-
-    total_params = sum(p.numel() for p in pt_bert.parameters())
-    trainable_params = sum(p.numel() for p in pt_bert.parameters() if p.requires_grad)
-    logger.info("total params:     %d", total_params)
-    logger.info("trainable params: %d", trainable_params)
-
     logger.info("init trainer")
     args = TrainingArguments(
         output_dir=out_dir,
@@ -99,7 +80,7 @@ def main(
 
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
     trainer = Trainer(
-        pt_bert,
+        bert,
         args=args,
         train_dataset=train_tokenized,
         eval_dataset=eval_tokenized,

@@ -46,7 +46,7 @@ def ft_bert_squad(
     _setup_logging(out_dir=out_dir)
     _save_params(out_dir=out_dir, params=ctx.params)
 
-    from cptlms.scripts.ft_bert_squad import main
+    from icftner.scripts.ft_bert_squad import main
 
     main(
         pretrained_model=pretrained_model,
@@ -75,7 +75,7 @@ def pt_bert_squad(
     _setup_logging(out_dir=out_dir)
     _save_params(out_dir=out_dir, params=ctx.params)
 
-    from cptlms.scripts.pt_bert_squad import main
+    from icftner.scripts.pt_bert_squad import main
 
     main(
         pretrained_model=pretrained_model,
@@ -103,7 +103,7 @@ def benchmark_bert_multinerd(
     _setup_logging(out_dir=out_dir)
     _save_params(out_dir=out_dir, params=ctx.params)
 
-    from cptlms.scripts.benchmark_bert_multinerd import main
+    from icftner.scripts.benchmark_bert_multinerd import main
 
     main(
         pretrained_model=pretrained_model,
@@ -128,7 +128,7 @@ def ft_bert_multinerd(
     _setup_logging(out_dir=out_dir)
     _save_params(out_dir=out_dir, params=ctx.params)
 
-    from cptlms.scripts.ft_bert_multinerd import main
+    from icftner.scripts.ft_bert_multinerd import main
 
     main(
         pretrained_model=pretrained_model,
@@ -159,7 +159,7 @@ def pt_bert_multinerd(
     _setup_logging(out_dir=out_dir)
     _save_params(out_dir=out_dir, params=ctx.params)
 
-    from cptlms.scripts.pt_bert_multinerd import main
+    from icftner.scripts.pt_bert_multinerd import main
 
     main(
         pretrained_model=pretrained_model,
