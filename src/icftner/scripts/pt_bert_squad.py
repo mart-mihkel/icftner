@@ -54,6 +54,7 @@ def main(
         overwrite_output_dir=True,
         logging_dir=f"{out_dir}/tensorboard",
         logging_steps=2500,
+        logging_first_step=True,
         report_to="tensorboard",
         num_train_epochs=epochs,
         eval_strategy="steps",
