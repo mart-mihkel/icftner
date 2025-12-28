@@ -35,6 +35,11 @@ def main(
     logger.info("load %s", pretrained_model)
     bert = AutoModelForQuestionAnswering.from_pretrained(pretrained_model)
 
+    total_params = sum(p.numel() for p in bert.parameters())
+    trainable_params = sum(p.numel() for p in bert.parameters() if p.requires_grad)
+    logger.info("total params:     %d", total_params)
+    logger.info("trainable params: %d", trainable_params)
+
     logger.info("init trainer")
     args = TrainingArguments(
         output_dir=out_dir,

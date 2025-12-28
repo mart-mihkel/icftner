@@ -15,6 +15,7 @@ from transformers.training_args import TrainingArguments
 
 from icftner.datasets.multinerd import (
     MULTINERD_ID2TAG,
+    MULTINERD_SYSTEM_TOKENS,
     MULTINERD_TAG2ID,
     compute_multinerd_prompted_metrics,
     filter_multinerd_english,
@@ -35,6 +36,7 @@ def main(
     encoder_hidden_size: int,
     encoder_reparam_type: EncoderReparameterizationType,
     english_only: bool,
+    prompted: bool,
     train_split: str,
     eval_split: str,
 ):
@@ -57,8 +59,21 @@ def main(
         eval = eval.filter(filter_multinerd_english, batched=True)
 
     logger.info("tokenize multinerd prompted")
-    train_tokenized = tokenize_multinerd_prompted(tokenizer=tokenizer, data=train)
-    eval_tokenized = tokenize_multinerd_prompted(tokenizer=tokenizer, data=eval)
+    system_tokens = []
+    if prompted:
+        system_tokens = MULTINERD_SYSTEM_TOKENS
+
+    train_tokenized = tokenize_multinerd_prompted(
+        tokenizer=tokenizer,
+        data=train,
+        system_prompt_tokens=system_tokens,  # type: ignore
+    )
+
+    eval_tokenized = tokenize_multinerd_prompted(
+        tokenizer=tokenizer,
+        data=eval,
+        system_prompt_tokens=system_tokens,  # type: ignore
+    )
 
     logger.info("load %s", pretrained_model)
     bert = AutoModelForSequenceClassification.from_pretrained(

@@ -127,6 +127,11 @@ MULTINERD_ID2TAG: dict[int, MultinerdTag] = {
     30: "I-VEHI",
 }
 
+MULTINERD_SYSTEM_TOKENS = (
+    "Determine the NER tag of the given word in the following sentence , possible tags are :".split()
+    + list(MULTINERD_ID2TAG.values())
+)
+
 
 class MultinerdMetrics(TypedDict):
     accuracy: float
@@ -197,8 +202,8 @@ def tokenize_multinerd_prompted(
                 attention_mask: list[list[int]]
                 labels: list[int]
         """
-        labels = []
-        prompts = []
+        labels: list[MultinerdTag] = []
+        prompts: list[list[str]] = []
         for tokens, tags in zip(batch["tokens"], batch["ner_tags"]):
             for token, tag in zip(tokens, tags):
                 if tag == 0 and random.random() < drop_other_tag_prob:
@@ -258,7 +263,7 @@ def _prepare_prompt_bert(
     cls_token: str = "[CLS]",
 ) -> list[str]:
     if len(system_tokens) > 0:
-        system_tokens.append(sep_token)
+        system_tokens = system_tokens + [sep_token]
 
     return (
         [cls_token] + system_tokens + [target_token, sep_token] + tokens + [sep_token]

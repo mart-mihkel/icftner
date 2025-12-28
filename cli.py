@@ -132,6 +132,7 @@ def ft_bert_multinerd(
     epochs: int = 5,
     head_only: bool = False,
     english_only: bool = True,
+    prompted: bool = True,
     train_split: str = "train",
     eval_split: str = "validation",
 ):
@@ -146,6 +147,7 @@ def ft_bert_multinerd(
         epochs=epochs,
         head_only=head_only,
         english_only=english_only,
+        prompted=prompted,
         train_split=train_split,
         eval_split=eval_split,
     )
@@ -164,6 +166,7 @@ def pt_bert_multinerd(
     encoder_hidden_size: int = 128,
     encoder_reparam_type: Literal["emb", "mlp", "lstm"] = "mlp",
     english_only: bool = True,
+    prompted: bool = True,
     train_split: str = "train",
     eval_split: str = "validation",
 ):
@@ -181,6 +184,7 @@ def pt_bert_multinerd(
         encoder_hidden_size=encoder_hidden_size,
         encoder_reparam_type=encoder_reparam_type,
         english_only=english_only,
+        prompted=prompted,
         train_split=train_split,
         eval_split=eval_split,
     )

@@ -1,6 +1,5 @@
 import logging
 
-
 from datasets.arrow_dataset import Dataset
 from datasets.load import load_dataset
 from datasets.utils.info_utils import VerificationMode
@@ -16,6 +15,7 @@ from transformers.training_args import TrainingArguments
 
 from icftner.datasets.multinerd import (
     MULTINERD_ID2TAG,
+    MULTINERD_SYSTEM_TOKENS,
     MULTINERD_TAG2ID,
     compute_multinerd_prompted_metrics,
     filter_multinerd_english,
@@ -32,6 +32,7 @@ def main(
     epochs: int,
     head_only: bool,
     english_only: bool,
+    prompted: bool,
     train_split: str,
     eval_split: str,
 ):
@@ -54,8 +55,21 @@ def main(
         eval = eval.filter(filter_multinerd_english, batched=True)
 
     logger.info("tokenize multinerd prompted")
-    train_tokenized = tokenize_multinerd_prompted(tokenizer=tokenizer, data=train)
-    eval_tokenized = tokenize_multinerd_prompted(tokenizer=tokenizer, data=eval)
+    system_tokens = []
+    if prompted:
+        system_tokens = MULTINERD_SYSTEM_TOKENS
+
+    train_tokenized = tokenize_multinerd_prompted(
+        tokenizer=tokenizer,
+        data=train,
+        system_prompt_tokens=system_tokens,  # type: ignore
+    )
+
+    eval_tokenized = tokenize_multinerd_prompted(
+        tokenizer=tokenizer,
+        data=eval,
+        system_prompt_tokens=system_tokens,  # type: ignore
+    )
 
     logger.info("load %s", pretrained_model)
     bert = AutoModelForSequenceClassification.from_pretrained(
@@ -74,6 +88,11 @@ def main(
         ]
 
         freeze_bert(bert, skip_params=head_params)
+
+    total_params = sum(p.numel() for p in bert.parameters())
+    trainable_params = sum(p.numel() for p in bert.parameters() if p.requires_grad)
+    logger.info("total params:     %d", total_params)
+    logger.info("trainable params: %d", trainable_params)
 
     logger.info("init trainer")
     args = TrainingArguments(
