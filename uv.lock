@@ -619,9 +619,6 @@ dependencies = [
     { name = "accelerate" },
     { name = "datasets" },
     { name = "evaluate" },
-    { name = "ipython" },
-    { name = "marimo" },
-    { name = "peft" },
     { name = "polars" },
     { name = "scikit-learn" },
     { name = "tensorboard" },
@@ -632,6 +629,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "ipython" },
     { name = "marimo" },
     { name = "plotnine" },
     { name = "pytest" },
@@ -644,9 +642,6 @@ requires-dist = [
     { name = "accelerate", specifier = ">=1.12.0" },
     { name = "datasets", specifier = ">=4.3.0" },
     { name = "evaluate", specifier = ">=0.4.6" },
-    { name = "ipython", specifier = ">=9.6.0" },
-    { name = "marimo", specifier = ">=0.18.2" },
-    { name = "peft", specifier = ">=0.17.1" },
     { name = "polars", specifier = ">=1.34.0" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
     { name = "tensorboard", specifier = ">=2.20.0" },
@@ -657,6 +652,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "ipython", specifier = ">=9.6.0" },
     { name = "marimo", specifier = ">=0.18.4" },
     { name = "plotnine", specifier = ">=0.15.2" },
     { name = "pytest", specifier = ">=9.0.1" },
@@ -1463,27 +1459,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/be/44/ed13eccdd0519eff265f44b670d46fbb0ec813e2274932dc1c0e48520f7d/patsy-1.0.2.tar.gz", hash = "sha256:cdc995455f6233e90e22de72c37fcadb344e7586fb83f06696f54d92f8ce74c0", size = 399942, upload-time = "2025-10-20T16:17:37.535Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/70/ba4b949bdc0490ab78d545459acd7702b211dfccf7eb89bbc1060f52818d/patsy-1.0.2-py2.py3-none-any.whl", hash = "sha256:37bfddbc58fcf0362febb5f54f10743f8b21dd2aa73dec7e7ef59d1b02ae668a", size = 233301, upload-time = "2025-10-20T16:17:36.563Z" },
-]
-
-[[package]]
-name = "peft"
-version = "0.18.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "accelerate" },
-    { name = "huggingface-hub" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "psutil" },
-    { name = "pyyaml" },
-    { name = "safetensors" },
-    { name = "torch" },
-    { name = "tqdm" },
-    { name = "transformers" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4b/0c/f2938db546ac7fc961ab5917cd50fcf5d0d70b406de93e3faccaa504e152/peft-0.18.0.tar.gz", hash = "sha256:c81c80b2056ab40c23d58ef25f74daab417ac653970718589a11a8af28218588", size = 634141, upload-time = "2025-11-13T11:13:06.603Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/55/481bf25613d40ef53534f664deba7b138fe566356b6ca10304e2b3b2529c/peft-0.18.0-py3-none-any.whl", hash = "sha256:624f69ca6393b765ccc6734adda7ca57d80b238f0900a42c357d8b67a03d62ff", size = 556427, upload-time = "2025-11-13T11:13:03.664Z" },
 ]
 
 [[package]]
