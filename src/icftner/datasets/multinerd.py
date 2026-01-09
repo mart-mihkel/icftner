@@ -1,5 +1,6 @@
 import logging
 import random
+import string
 from typing import Literal, TypedDict
 
 import numpy as np
@@ -128,19 +129,14 @@ MULTINERD_ID2TAG: dict[int, MultinerdTag] = {
     30: "I-VEHI",
 }
 
-MULTINERD_GIBBERISH_TOKENS = (
-    "ca950c90 8021 45d7 b3b3 c8337c9fa62a a51ed42a fbe9 4748 8774 5b1d2eb3289e "
-    "86a6002f 951d 4c9d bcdb c342b7276918 c54f6c8c 1f53 4193 a2cc 555e7a1f3056 "
-    "aff0c3dd cc6d 4176 a888 ae232b8c8218 0fe731e3 f80c 4916 8efa b083a9853ad4 "
-    "b472698c 4c8c 40a8 b673 b06ca42f5977 4660c7fb a13b 4b06 83d7 69601930219d "
-    "39b80454 421d 42c6 85bb 853e3c87c1d1 f003dd8d 5db5 4b8c"
-).split()
+MULTINERD_SYSTEM_PROMPT = """You are a named entity recognition model .
+Given a target word and a sentence containing that word , predict the NER tag of the target word based on its context .
 
-MULTINERD_SYSTEM_TOKENS = (
-    "Determine the NER tag of the given word in the following sentence , "
-    "possible tags are :".split()
-    + list(MULTINERD_ID2TAG.values())
-)
+Example
+Word : Paris
+Sentence : Paris is the capital of France .
+Output : LOC
+""".split()
 
 
 class MultinerdMetrics(TypedDict):
@@ -297,6 +293,17 @@ def _align_words_to_tags(
         previous_word_id = word_id
 
     return label_ids
+
+
+def random_gibberish(num_words: int, min_len: int = 3, max_len: int = 12) -> list[str]:
+    chars = string.ascii_lowercase
+    words = []
+    for _ in range(num_words):
+        k = random.randint(min_len, max_len)
+        word = "".join(random.choices(chars, k=k))
+        words.append(word)
+
+    return words
 
 
 def filter_multinerd_english(batch: MultinerdBatch) -> list[bool]:

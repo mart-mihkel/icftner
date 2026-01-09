@@ -27,6 +27,13 @@ def export_tensorboard(logdir: str, outfile: str = "tb.csv"):
     main(logdir=logdir, outfile=outfile)
 
 
+@app.command(help="Print multinerd system prompt info")
+def prompt_info_multinerd(pretrained_model: str = "distilbert-base-uncased"):
+    from icftner.scripts.prompt_info_multinerd import main
+
+    main(pretrained_model=pretrained_model)
+
+
 @app.command(
     help="Fine tune a pretrained bert model for question answering on SQuAD dataset"
 )

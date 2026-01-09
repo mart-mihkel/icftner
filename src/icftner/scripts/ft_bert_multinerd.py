@@ -14,13 +14,13 @@ from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
 from icftner.datasets.multinerd import (
-    MULTINERD_GIBBERISH_TOKENS,
     MULTINERD_ID2TAG,
-    MULTINERD_SYSTEM_TOKENS,
+    MULTINERD_SYSTEM_PROMPT,
     MULTINERD_TAG2ID,
     MultinerdSystemPromptType,
     compute_multinerd_prompted_metrics,
     filter_multinerd_english,
+    random_gibberish,
     tokenize_multinerd_prompted,
 )
 from icftner.models.bert import freeze_bert
@@ -57,11 +57,15 @@ def main(
         eval = eval.filter(filter_multinerd_english, batched=True)
 
     logger.info("tokenize multinerd prompted")
+    assert system_prompt_type in ["multinerd", "gibberish", "empty"], (
+        "Invalid system propmt type, must be multinerd, gibberish or empty!"
+    )
+
     system_tokens = []
     if system_prompt_type == "multinerd":
-        system_tokens = MULTINERD_SYSTEM_TOKENS
+        system_tokens = MULTINERD_SYSTEM_PROMPT
     elif system_prompt_type == "gibberish":
-        system_tokens = MULTINERD_GIBBERISH_TOKENS
+        system_tokens = random_gibberish(len(MULTINERD_SYSTEM_PROMPT))
 
     train_tokenized = tokenize_multinerd_prompted(
         tokenizer=tokenizer,
