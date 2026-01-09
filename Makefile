@@ -20,10 +20,10 @@ format:
 
 check: format lint types test
 
-notebooks:
+marimo:
 	uv run marimo edit $(NOTEBOOK_DIR)
 
-typesetting:
+typst:
 	typst watch typesetting/main.typ --open $(DOCUMENT_VIEWER)
 
 tensorboard:

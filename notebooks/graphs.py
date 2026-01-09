@@ -5,16 +5,17 @@ app = marimo.App(width="medium")
 
 with app.setup:
     import polars as pl
-    from icftner.scripts.export_tensorboard import main as export_tensorboard
     from plotnine import (
-        ggplot,
         aes,
-        geom_line,
-        theme_bw,
         facet_wrap,
+        geom_line,
+        ggplot,
         labs,
+        theme_bw,
         ylim,
     )
+
+    from icftner.scripts.export_tensorboard import main as export_tensorboard
 
 
 @app.cell
@@ -28,7 +29,7 @@ def _():
     )
 
     export_tensorboard(
-        logdir="out/pt-multinerd-32v-mlp-distilbert-base//tensorboard",
+        logdir="out/pt-multinerd-32v-mlp-distilbert-base/tensorboard",
         outfile=_file_pt,
     )
 
@@ -67,13 +68,6 @@ def _(df):
 def _(df):
     _df = df.filter(pl.col("metric").is_in(["accuracy", "precision", "recall"]))
     _df = _df.with_columns((_df["step"] / 1_000_000).alias("step_m"))
-
-    _facet_labels = {
-        "fine-tuning": "Fine-tuning",
-        "prefix-tuning": "Prefix-tuning",
-    }
-
-    _color_labels = {"loss": "Loss", "f1": "F1 Score", "acc": "Accuracy"}
 
     _p = (
         ggplot(_df)
