@@ -1,4 +1,4 @@
-# In-Context Fine-Tuning for NER with Language Models
+# In-Context Fine-Tuning
 
 ## Development
 
@@ -8,7 +8,7 @@ Run `make install` to setup a local venv, see [Makefile](./Makefile) for other d
 
 ## Usage
 
-The cli contains scripts for finetuning, p-tuning, benchmarking and utilities.
+The cli contains scripts for fine-tuning, prompt-tuning and utilities.
 
 ```bash
 uv run cli.py --help

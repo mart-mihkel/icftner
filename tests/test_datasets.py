@@ -3,32 +3,7 @@ from typing import cast
 from pytest import approx
 from transformers.trainer_utils import EvalPrediction
 
-from icftner.datasets.multinerd import (
-    _prepare_prompt_bert,
-    compute_multinerd_prompted_metrics,
-)
-
-
-def test_prepare_prompt_bert():
-    target = "[CLS] fish [SEP] How much is the fish ? [SEP]"
-    prompt_tokens = _prepare_prompt_bert(
-        target_token="fish",
-        tokens=["How", "much", "is", "the", "fish", "?"],
-        system_tokens=[],
-    )
-
-    assert target == " ".join(prompt_tokens)
-
-
-def test_prepare_system_prompt_bert():
-    target = "[CLS] Find the NER tags . [SEP] fish [SEP] How much is the fish ? [SEP]"
-    prompt_tokens = _prepare_prompt_bert(
-        target_token="fish",
-        tokens=["How", "much", "is", "the", "fish", "?"],
-        system_tokens=["Find", "the", "NER", "tags", "."],
-    )
-
-    assert target == " ".join(prompt_tokens)
+from icft.datasets.multinerd import Multinerd
 
 
 def test_compute_multinerd_metrics():
@@ -43,7 +18,7 @@ def test_compute_multinerd_metrics():
     ]
 
     eval_pred = cast(EvalPrediction, (logits, labels))
-    eval_metrics = compute_multinerd_prompted_metrics(eval_pred)
+    eval_metrics = Multinerd.compute_metrics(eval_pred)
 
     assert eval_metrics["accuracy"] == approx(0.5)
     assert eval_metrics["precision"] == approx(0.5)
