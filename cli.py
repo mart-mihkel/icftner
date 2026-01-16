@@ -2,9 +2,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from typer import Context, Typer
+from typer import Context, Option, Typer
 
 app = Typer(no_args_is_help=True, add_completion=False)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -32,64 +32,6 @@ def prompt_info_multinerd(pretrained_model: str = "distilbert-base-uncased"):
     from icftner.scripts.prompt_info_multinerd import main
 
     main(pretrained_model=pretrained_model)
-
-
-@app.command(
-    help="Fine tune a pretrained bert model for question answering on SQuAD dataset"
-)
-def ft_bert_squad(
-    ctx: Context,
-    pretrained_model: str = "distilbert-base-uncased",
-    out_dir: str = "out/ft-squad",
-    epochs: int = 20,
-    head_only: bool = False,
-    train_split: str = "train",
-    eval_split: str = "validation",
-):
-    _save_params(out_dir=out_dir, params=ctx.params)
-
-    from icftner.scripts.ft_bert_squad import main
-
-    main(
-        pretrained_model=pretrained_model,
-        out_dir=out_dir,
-        epochs=epochs,
-        head_only=head_only,
-        train_split=train_split,
-        eval_split=eval_split,
-    )
-
-
-@app.command(
-    help="P-tune a pretrained bert model for question answering on SQuAD dataset"
-)
-def pt_bert_squad(
-    ctx: Context,
-    pretrained_model: str = "distilbert-base-uncased",
-    out_dir: str = "out/pt-squad",
-    epochs: int = 5,
-    num_virtual_tokens: int = 32,
-    train_new_layers: bool = True,
-    encoder_hidden_size: int = 128,
-    encoder_reparam_type: Literal["emb", "mlp", "lstm"] = "mlp",
-    train_split: str = "train",
-    eval_split: str = "validation",
-):
-    _save_params(out_dir=out_dir, params=ctx.params)
-
-    from icftner.scripts.pt_bert_squad import main
-
-    main(
-        pretrained_model=pretrained_model,
-        out_dir=out_dir,
-        epochs=epochs,
-        num_virtual_tokens=num_virtual_tokens,
-        train_new_layers=train_new_layers,
-        encoder_hidden_size=encoder_hidden_size,
-        encoder_reparam_type=encoder_reparam_type,
-        train_split=train_split,
-        eval_split=eval_split,
-    )
 
 
 @app.command(
@@ -152,8 +94,12 @@ def pt_bert_multinerd(
     pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/pt-multinerd",
     epochs: int = 5,
-    num_virtual_tokens: int = 32,
-    auto_virtual_tokens: bool = True,
+    num_virtual_tokens: Annotated[
+        int, Option(help="Ignored if --auto_virtual_tokens is set")
+    ] = 32,
+    auto_virtual_tokens: Annotated[
+        bool, Option(help="Match number of system prompt tokens")
+    ] = True,
     train_new_layers: bool = True,
     encoder_hidden_size: int = 128,
     encoder_random_init: bool = True,
