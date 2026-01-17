@@ -6,25 +6,18 @@ install:
 	uv sync
 	uv pip install --editable .
 
-test:
-	@uv run pytest
-
-types:
-	@uv run ty check
-
-lint:
-	@uv run ruff check --fix
-
-format:
-	@uv run ruff format
-
-check: format lint types test
+pre-commit:
+	uv run ruff check --fix
+	uv run ruff format
+	uv run ty check
+	uv run pytest
 
 marimo:
 	uv run marimo edit $(NOTEBOOK_DIR)
 
+tensorboard:
+	uv run tensorboard --logdir $(TB_LOG_DIR)
+
 typst:
 	typst watch typesetting/main.typ --open $(DOCUMENT_VIEWER)
 
-tensorboard:
-	uv run tensorboard --logdir $(TB_LOG_DIR)
