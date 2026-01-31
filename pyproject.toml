@@ -13,13 +13,12 @@ dependencies = [
     "polars>=1.34.0",
     "typer>=0.20.0",
     "torch>=2.9.0",
-    "marimo>=0.19.6",
 ]
 
 [dependency-groups]
 dev = [
-    "marimo>=0.19.4",
+    "marimo>=0.19.7",
     "pytest>=9.0.1",
-    "ruff>=0.14.2",
-    "ty>=0.0.12",
+    "ruff>=0.14.14",
+    "ty>=0.0.14",
 ]
