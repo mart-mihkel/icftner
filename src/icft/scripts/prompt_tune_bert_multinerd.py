@@ -25,16 +25,17 @@ def _log_params(model: PreTrainedModel):
     logger.info("trainable params: %d", trainable_params)
 
 
-def _setup_ptbert(
+def _setup_pt_bert(
     base_model: str,
     prefix_random_init: bool,
     tokenizer: PreTrainedTokenizer,
 ) -> PTBert:
-    bert = AutoModelForSequenceClassification.from_pretrained(
+    bert, info = AutoModelForSequenceClassification.from_pretrained(
         base_model,
         num_labels=len(Multinerd.ID2TAG),
         id2label=Multinerd.ID2TAG,
         label2id=Multinerd.TAG2ID,
+        output_loading_info=True,
     )
 
     logger.info("init pt-bert")
@@ -47,7 +48,12 @@ def _setup_ptbert(
     else:
         prefix_embeds = bert_emb.forward(system_prompt["input_ids"])
 
-    conf = PTBertConfig(bert=bert, prefix_embeds=prefix_embeds)
+    conf = PTBertConfig(
+        bert=bert,
+        head_layers=info["unexpected_keys"],
+        prefix_embeds=prefix_embeds,
+    )
+
     return PTBert(conf)
 
 
@@ -79,7 +85,7 @@ def main(
     if "checkpoint" in pretrained_model:
         pt_bert = PTBert.from_pretrained(pretrained_model)
     else:
-        pt_bert = _setup_ptbert(
+        pt_bert = _setup_pt_bert(
             base_model=pretrained_model,
             prefix_random_init=prefix_random_init,
             tokenizer=tokenizer,

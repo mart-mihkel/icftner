@@ -16,11 +16,13 @@ class PTBertConfig(PretrainedConfig):
     def __init__(
         self,
         bert: BertForSequenceClassification,
+        head_layers: set[str],
         prefix_embeds: Annotated[Tensor, "1 virtual emb"],
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.bert = bert
+        self.head_layers = head_layers
         self.prefix_embeds = prefix_embeds
 
 
@@ -29,7 +31,12 @@ class PTBert(PreTrainedModel):
         super().__init__(config)
         self.bert = config.bert
         self.prefix_embeds = Parameter(config.prefix_embeds)
-        freeze_bert(self.bert, freeze_head=False)
+
+        logger.info("freeze base bert")
+        logger.info("skip %s", config.head_layers)
+
+        for name, param in self.bert.named_parameters():
+            param.requires_grad = name in config.head_layers
 
     def forward(
         self,
@@ -62,21 +69,3 @@ class PTBert(PreTrainedModel):
         out["loss"] = cast(FloatTensor, cross_entropy(out_logits, labels))
 
         return out
-
-
-def freeze_bert(bert: BertForSequenceClassification, freeze_head: bool):
-    logger.info("freeze bert parameters")
-
-    head_params = [
-        "classifier.bias",
-        "classifier.weight",
-        "pre_classifier.bias",
-        "pre_classifier.weight",
-    ]
-
-    for name, param in bert.named_parameters():
-        if not freeze_head and name in head_params:
-            logger.info("skip %s", name)
-            continue
-
-        param.requires_grad = False

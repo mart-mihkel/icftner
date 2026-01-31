@@ -8,9 +8,15 @@ from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
 from icft.datasets.multinerd import Multinerd
-from icft.models.bert import freeze_bert
 
 logger = logging.getLogger(__name__)
+
+
+def _freeze_model(model: PreTrainedModel, skip_layers: set[str]):
+    logger.info("freeze base bert")
+    logger.info("skip %s", skip_layers)
+    for name, param in model.named_parameters():
+        param.requires_grad = name in skip_layers
 
 
 def _log_params(model: PreTrainedModel):
@@ -46,15 +52,16 @@ def main(
     logger.info("test samples:  %d", len(multinerd.test))
 
     logger.info("load %s", pretrained_model)
-    bert = AutoModelForSequenceClassification.from_pretrained(
+    bert, info = AutoModelForSequenceClassification.from_pretrained(
         pretrained_model,
         num_labels=len(Multinerd.ID2TAG),
         id2label=Multinerd.ID2TAG,
         label2id=Multinerd.TAG2ID,
+        output_loading_info=True,
     )
 
     if head_only:
-        freeze_bert(bert, freeze_head=False)
+        _freeze_model(model=bert, skip_layers=info["unexpected_keys"])
 
     _log_params(model=bert)
 
