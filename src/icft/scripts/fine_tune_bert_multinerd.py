@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Literal
 
-from transformers import AutoTokenizer, DataCollatorWithPadding
+from transformers import AutoTokenizer, DataCollatorWithPadding, PreTrainedModel
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
@@ -11,6 +11,13 @@ from icft.datasets.multinerd import Multinerd
 from icft.models.bert import freeze_bert
 
 logger = logging.getLogger(__name__)
+
+
+def _log_params(model: PreTrainedModel):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logger.info("total params:     %d", total_params)
+    logger.info("trainable params: %d", trainable_params)
 
 
 def main(
@@ -49,23 +56,21 @@ def main(
     if head_only:
         freeze_bert(bert, freeze_head=False)
 
-    total_params = sum(p.numel() for p in bert.parameters())
-    trainable_params = sum(p.numel() for p in bert.parameters() if p.requires_grad)
-    logger.info("total params:     %d", total_params)
-    logger.info("trainable params: %d", trainable_params)
+    _log_params(model=bert)
 
     logger.info("init trainer")
     os.environ["TENSORBOARD_LOGGING_DIR"] = f"{out_dir}/tensorboard"
     args = TrainingArguments(
         output_dir=out_dir,
-        logging_steps=5000,
-        logging_first_step=True,
         report_to="tensorboard",
         num_train_epochs=epochs,
+        logging_steps=5000,
+        logging_first_step=True,
+        eval_steps=50000,
         eval_strategy="steps",
-        eval_steps=25000,
         save_strategy="epoch",
         auto_find_batch_size=True,
+        remove_unused_columns=False,
         fp16=True,
     )
 

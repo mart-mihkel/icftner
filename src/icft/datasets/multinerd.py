@@ -1,15 +1,11 @@
 import logging
-import random
-import string
 from typing import Literal, TypedDict, cast
 
 import numpy as np
-from datasets.arrow_dataset import Dataset
 from datasets.load import load_dataset
 from datasets.utils.info_utils import VerificationMode
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from transformers import BatchEncoding, PreTrainedTokenizer
-from transformers.trainer_utils import EvalPrediction
+from transformers import BatchEncoding, EvalPrediction, PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -143,14 +139,14 @@ class Multinerd:
         30: "I-VEHI",
     }
 
-    _SYSTEM_TOKENS = """You are a named entity recognition model .
-Given a target word and a sentence containing that word , predict the NER tag of the target word based on its context .
+    SYSTEM_PROMPT = """You are a named entity recognition model.
+Given a target word and a sentence containing that word, predict the NER tag of the target word based on its context.
 
 Example
-Word : Paris
-Sentence : Paris is the capital of France .
-Output : B-LOC
-""".split()
+Word: Paris
+Sentence: Paris is the capital of France.
+Output: B-LOC
+"""
 
     def __init__(
         self,
@@ -167,58 +163,91 @@ Output : B-LOC
             verification_mode=VerificationMode.NO_CHECKS,
         )
 
-        assert isinstance(train, Dataset)
-        assert isinstance(eval, Dataset)
-        assert isinstance(test, Dataset)
-
         logger.info("filter english")
-        train = train.filter(_filter_english, batched=True)
-        eval = eval.filter(_filter_english, batched=True)
-        eval = eval.filter(_filter_english, batched=True)
+        train = train.filter(self._filter_english, batched=True)
+        eval = eval.filter(self._filter_english, batched=True)
+        test = test.filter(self._filter_english, batched=True)
 
-        logger.info("tokenize")
-        sep_token = tokenizer.special_tokens_map["sep_token"]
-        assert isinstance(sep_token, str), "Expected one separator token"
-
+        logger.info("prepare system prompt")
         self.tokenizer = tokenizer
-        self.sep_token = sep_token
+        self.sep_token = tokenizer.special_tokens_map["sep_token"]
+        self.cls_token = tokenizer.special_tokens_map["cls_token"]
 
-        self.system_tokens = []
         if system_prompt == "ner":
-            self.system_tokens = self._SYSTEM_TOKENS
+            self.system_tokens = self.tokenizer(
+                f"{self.cls_token} {self.SYSTEM_PROMPT} {self.sep_token}",
+                add_special_tokens=False,
+            )
         elif system_prompt == "random":
-            self.system_tokens = _random_tokens(len(self._SYSTEM_TOKENS))
+            self.system_tokens = self._randomize_system_prompt()
+        else:
+            self.system_tokens = self.tokenizer(
+                self.cls_token,
+                add_special_tokens=False,
+            )
 
+        logger.info("tokenize multinerd")
         self.train = train.map(
-            self._tokenize, batched=True, remove_columns=train.column_names
+            self._tokenize,
+            batched=True,
+            remove_columns=train.column_names,
         )
+
         self.eval = eval.map(
-            self._tokenize, batched=True, remove_columns=eval.column_names
+            self._tokenize,
+            batched=True,
+            remove_columns=eval.column_names,
         )
+
         self.test = test.map(
-            self._tokenize, batched=True, remove_columns=test.column_names
+            self._tokenize,
+            batched=True,
+            remove_columns=test.column_names,
         )
+
+    def _randomize_system_prompt(self) -> BatchEncoding:
+        tokens = self.tokenizer(self.SYSTEM_PROMPT, add_special_tokens=False)
+
+        ids = cast(list[int], tokens["input_ids"])
+        attn = cast(list[int], tokens["attention_mask"])
+        vocab_size = self.tokenizer.vocab_size
+        random_ids = np.random.randint(0, vocab_size - 1, size=len(ids))
+
+        cls_id = self.tokenizer.convert_tokens_to_ids(self.cls_token)
+        sep_id = self.tokenizer.convert_tokens_to_ids(self.sep_token)
+
+        input_ids = [cls_id] + random_ids.tolist() + [sep_id]
+        attention_mask = [1] + attn + [1]
+
+        return BatchEncoding({"input_ids": input_ids, "attention_mask": attention_mask})
 
     def _tokenize(self, batch: MultinerdBatch) -> BatchEncoding:
         labels: list[MultinerdTag] = []
         prompts: list[list[str]] = []
         for tokens, tags in zip(batch["tokens"], batch["ner_tags"]):
             for token, tag in zip(tokens, tags):
-                prompt = self._build_prompt(target=token, sentence=tokens)
+                prompt = [token, self.sep_token] + tokens
                 prompts.append(prompt)
                 labels.append(tag)
 
-        tokenized = self.tokenizer(prompts, truncation=True, is_split_into_words=True)
-        tokenized["labels"] = labels
-        return tokenized
-
-    def _build_prompt(self, target: str, sentence: list[str]) -> list[str]:
-        return (
-            self.system_tokens
-            + ([self.sep_token] if self.system_tokens else [])
-            + [target, self.sep_token]
-            + sentence
+        tokens = self.tokenizer(
+            prompts,
+            is_split_into_words=True,
+            add_special_tokens=False,
+            return_token_type_ids=False,
         )
+
+        sys_ids = cast(list[int], self.system_tokens["input_ids"])
+        sys_attn = cast(list[int], self.system_tokens["attention_mask"])
+
+        ids = cast(list[list[int]], tokens["input_ids"])
+        attn = cast(list[list[int]], tokens["attention_mask"])
+
+        tokens["labels"] = labels
+        tokens["input_ids"] = [sys_ids + prompt_ids for prompt_ids in ids]
+        tokens["attention_mask"] = [sys_attn + prompt_attn for prompt_attn in attn]
+
+        return tokens
 
     @staticmethod
     def compute_metrics(eval_pred: EvalPrediction) -> dict[str, float]:
@@ -226,26 +255,13 @@ Output : B-LOC
         preds = np.argmax(logits, axis=-1)
         metrics = MultinerdMetrics(
             accuracy=accuracy_score(labels, preds),
-            precision=precision_score(
-                labels, preds, average="macro", zero_division=np.nan
-            ),
+            precision=precision_score(labels, preds, average="macro"),
             recall=recall_score(labels, preds, average="macro"),
             f1=f1_score(labels, preds, average="macro"),
         )
 
         return cast(dict[str, float], metrics)
 
-
-def _random_tokens(n: int, min_len: int = 3, max_len: int = 12) -> list[str]:
-    chars = string.ascii_lowercase
-    words = []
-    for _ in range(n):
-        k = random.randint(min_len, max_len)
-        word = "".join(random.choices(chars, k=k))
-        words.append(word)
-
-    return words
-
-
-def _filter_english(batch: MultinerdBatch) -> list[bool]:
-    return [lang == "en" for lang in batch["lang"]]
+    @staticmethod
+    def _filter_english(batch: MultinerdBatch) -> list[bool]:
+        return [lang == "en" for lang in batch["lang"]]

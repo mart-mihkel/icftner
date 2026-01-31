@@ -4,14 +4,14 @@ __generated_with = "0.19.6"
 app = marimo.App()
 
 with app.setup:
-    from typing import cast, Annotated
+    from typing import Annotated, cast
 
     from torch import Tensor
     from transformers import (
-        AutoTokenizer,
         AutoModel,
-        PreTrainedTokenizer,
+        AutoTokenizer,
         ModernBertModel,
+        PreTrainedTokenizer,
     )
 
     from icft.datasets.multinerd import Multinerd
@@ -55,9 +55,8 @@ def _():
 
 @app.cell
 def _(model, tokenizer):
-    _prefix_tokens = " ".join(Multinerd._SYSTEM_TOKENS)
     _prefix_embeddings = encode_prefix(
-        prefix=_prefix_tokens,
+        prefix=Multinerd.SYSTEM_PROMPT,
         model=model,
         tokenizer=tokenizer,
     )

@@ -4,7 +4,8 @@ from typing import Annotated, Literal
 from typer import Option, Typer
 
 app = Typer(no_args_is_help=True, add_completion=False)
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
