@@ -12,13 +12,6 @@ from icft.datasets.multinerd import Multinerd
 logger = logging.getLogger(__name__)
 
 
-def _freeze_model(model: PreTrainedModel, skip_layers: set[str]):
-    logger.info("freeze base bert")
-    logger.info("skip %s", skip_layers)
-    for name, param in model.named_parameters():
-        param.requires_grad = name in skip_layers
-
-
 def _log_params(model: PreTrainedModel):
     total = sum(p.numel() for p in model.parameters())
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -32,21 +25,11 @@ def main(
     pretrained_model: str,
     out_dir: str,
     epochs: int,
-    train_split: str,
-    eval_split: str,
-    test_split: str,
 ):
     logger.info("load tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
 
-    multinerd = Multinerd(
-        tokenizer=tokenizer,
-        system_prompt=system_prompt,
-        train_split=train_split,
-        eval_split=eval_split,
-        test_split=test_split,
-    )
-
+    multinerd = Multinerd(tokenizer=tokenizer, system_prompt=system_prompt)
     logger.info("train samples: %d", len(multinerd.train))
     logger.info("eval samples:  %d", len(multinerd.eval))
     logger.info("test samples:  %d", len(multinerd.test))
@@ -54,14 +37,17 @@ def main(
     logger.info("load %s", pretrained_model)
     bert, info = AutoModelForSequenceClassification.from_pretrained(
         pretrained_model,
-        num_labels=len(Multinerd.ID2TAG),
-        id2label=Multinerd.ID2TAG,
-        label2id=Multinerd.TAG2ID,
+        num_labels=len(Multinerd.ID2LABEL),
+        id2label=Multinerd.ID2LABEL,
+        label2id=Multinerd.LABEL2ID,
         output_loading_info=True,
     )
 
     if head_only:
-        _freeze_model(model=bert, skip_layers=info["missing_keys"])
+        logger.info("freeze base bert")
+        logger.info("skip %s", info["missing_keys"])
+        for name, param in bert.named_parameters():
+            param.requires_grad = name in info["missing_keys"]
 
     _log_params(model=bert)
 

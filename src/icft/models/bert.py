@@ -1,68 +1,85 @@
 import logging
-from typing import Annotated, cast
+from typing import cast
 
 import torch
 from torch import FloatTensor, Tensor
 from torch.nn.functional import cross_entropy
 from torch.nn.parameter import Parameter
-from transformers import PretrainedConfig, PreTrainedModel
+from transformers import (
+    AutoConfig,
+    AutoModelForSequenceClassification,
+    PretrainedConfig,
+    PreTrainedModel,
+)
 from transformers.modeling_outputs import SequenceClassifierOutput
-from transformers.models.bert.modeling_bert import BertForSequenceClassification
 
 logger = logging.getLogger(__name__)
 
 
 class PTBertConfig(PretrainedConfig):
+    model_type = "pt-bert"
+
     def __init__(
         self,
-        bert: BertForSequenceClassification,
-        head_layers: set[str],
-        prefix_embeds: Annotated[Tensor, "1 virtual emb"],
+        pretrained_model: str = "bert",
+        num_virtual_tokens: int = 1,
+        num_labels: int = 1,
+        id2label: dict[int, str] | None = None,
+        label2id: dict[str, int] | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.bert = bert
-        self.head_layers = head_layers
-        self.prefix_embeds = prefix_embeds
+        self.pretrained_model = pretrained_model
+        self.num_virtual_tokens = num_virtual_tokens
+        self.num_labels = num_labels
+        self.id2label = id2label
+        self.label2id = label2id
 
 
-class PTBert(PreTrainedModel):
+class PTBertSequenceClassification(PreTrainedModel):
+    config_class = PTBertConfig
+
     def __init__(self, config: PTBertConfig) -> None:
         super().__init__(config)
-        self.bert = config.bert
-        self.prefix_embeds = Parameter(config.prefix_embeds)
 
-        logger.info("freeze base bert")
-        logger.info("skip %s", config.head_layers)
+        base_config = AutoConfig.from_pretrained(
+            config.pretrained_model,
+            num_labels=config.num_labels,
+            id2label=config.id2label,
+            label2id=config.label2id,
+        )
 
-        for name, param in self.bert.named_parameters():
-            param.requires_grad = name in config.head_layers
+        bert = AutoModelForSequenceClassification.from_config(base_config)
+        hidden_size = bert.get_input_embeddings().embedding_dim
+
+        # weights initialized from_pretrained or manually on first run
+        self.bert = bert
+        self.prefix = Parameter(torch.empty(1, config.num_virtual_tokens, hidden_size))
+
+        self.post_init()
 
     def forward(
         self,
-        input_ids: Annotated[Tensor, "batch seq"],
-        attention_mask: Annotated[Tensor, "batch seq"],
-        labels: Annotated[Tensor, "batch"],
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        labels: Tensor,
     ) -> SequenceClassifierOutput:
         batch_size = input_ids.size(0)
-        prefix_embeds: Annotated[Tensor, "batch virtual emb"] = (
-            self.prefix_embeds.expand(batch_size, -1, -1)
-        )
-        prefix_attention: Annotated[Tensor, "batch virtual"] = torch.ones(
+
+        prefix_emb = self.prefix.expand(batch_size, -1, -1)
+        prefix_attn = torch.ones(
             input_ids.size(0),
-            self.prefix_embeds.size(1),
+            self.prefix.size(1),
             device=attention_mask.device,
             dtype=attention_mask.dtype,
         )
 
-        bert_embeds: Annotated[Tensor, "batch seq emb"] = (
-            self.bert.get_input_embeddings().forward(input_ids)
-        )
+        bert_emb = self.bert.get_input_embeddings().forward(input_ids)
 
-        inputs_embeds = torch.cat([prefix_embeds, bert_embeds], dim=1)
-        attention_mask = torch.cat([prefix_attention, attention_mask], dim=1)
+        inputs = torch.cat([prefix_emb, bert_emb], dim=1)
+        attn = torch.cat([prefix_attn, attention_mask], dim=1)
 
-        out = self.bert(inputs_embeds=inputs_embeds, attention_mask=attention_mask)
+        out = self.bert(inputs_embeds=inputs, attention_mask=attn)
         out = cast(SequenceClassifierOutput, out)
 
         out_logits = cast(Tensor, out.logits)

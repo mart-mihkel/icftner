@@ -3,7 +3,11 @@ from typing import Annotated, Literal
 
 from typer import Option, Typer
 
-app = Typer(no_args_is_help=True, add_completion=False)
+app = Typer(
+    no_args_is_help=True,
+    add_completion=False,
+    pretty_exceptions_show_locals=False,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,9 +31,6 @@ def fine_tune_bert_multinerd(
     pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/fine-tune",
     epochs: int = 1,
-    train_split: str = "train",
-    eval_split: str = "validation",
-    test_split: str = "test",
 ):
     from icft.scripts.fine_tune_bert_multinerd import main
 
@@ -39,9 +40,6 @@ def fine_tune_bert_multinerd(
         pretrained_model=pretrained_model,
         out_dir=out_dir,
         epochs=epochs,
-        train_split=train_split,
-        eval_split=eval_split,
-        test_split=test_split,
     )
 
 
@@ -58,9 +56,6 @@ def prompt_tune_bert_multinerd(
     pretrained_model: str = "distilbert-base-uncased",
     out_dir: str = "out/prefix-tune",
     epochs: int = 1,
-    train_split: str = "train",
-    eval_split: str = "validation",
-    test_split: str = "test",
 ):
     from icft.scripts.prompt_tune_bert_multinerd import main
 
@@ -69,9 +64,6 @@ def prompt_tune_bert_multinerd(
         pretrained_model=pretrained_model,
         out_dir=out_dir,
         epochs=epochs,
-        train_split=train_split,
-        eval_split=eval_split,
-        test_split=test_split,
     )
 
 

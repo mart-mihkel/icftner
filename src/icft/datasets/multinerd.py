@@ -71,7 +71,7 @@ class MultinerdBatch(TypedDict):
 
 
 class Multinerd:
-    TAG2ID: dict[MultinerdTag, int] = {
+    LABEL2ID: dict[MultinerdTag, int] = {
         "O": 0,
         "B-PER": 1,
         "I-PER": 2,
@@ -105,7 +105,7 @@ class Multinerd:
         "I-VEHI": 30,
     }
 
-    ID2TAG: dict[int, MultinerdTag] = {
+    ID2LABEL: dict[int, MultinerdTag] = {
         0: "O",
         1: "B-PER",
         2: "I-PER",
@@ -152,14 +152,11 @@ Output: B-LOC
         self,
         tokenizer: PreTrainedTokenizer,
         system_prompt: Literal["ner", "random", "none"],
-        train_split: str,
-        eval_split: str,
-        test_split: str,
     ) -> None:
         logger.info("load multinerd")
         train, eval, test = load_dataset(
             "Babelscape/multinerd",
-            split=[train_split, eval_split, test_split],
+            split=["train", "validation", "test"],
             verification_mode=VerificationMode.NO_CHECKS,
         )
 

@@ -1,19 +1,20 @@
 import logging
 import os
+from typing import cast
 
 import torch
+from torch.nn import Parameter
 from transformers import (
+    AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
     PreTrainedModel,
-    PreTrainedTokenizer,
 )
-from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
 from icft.datasets.multinerd import Multinerd
-from icft.models.bert import PTBert, PTBertConfig
+from icft.models.bert import PTBertConfig, PTBertSequenceClassification
 
 logger = logging.getLogger(__name__)
 
@@ -25,71 +26,64 @@ def _log_params(model: PreTrainedModel):
     logger.info("trainable params: %d", trainable)
 
 
-def _setup_pt_bert(
-    base_model: str,
-    prefix_random_init: bool,
-    tokenizer: PreTrainedTokenizer,
-) -> PTBert:
-    bert, info = AutoModelForSequenceClassification.from_pretrained(
-        base_model,
-        num_labels=len(Multinerd.ID2TAG),
-        id2label=Multinerd.ID2TAG,
-        label2id=Multinerd.TAG2ID,
-        output_loading_info=True,
-    )
-
-    logger.info("init pt-bert")
-    system_prompt = tokenizer(Multinerd.SYSTEM_PROMPT, return_tensors="pt")
-    bert_emb = bert.get_input_embeddings()
-    num_virtual_tokens = len(system_prompt["input_ids"])
-
-    if prefix_random_init:
-        prefix_embeds = torch.randn(1, num_virtual_tokens, bert_emb.embedding_dim)
-    else:
-        prefix_embeds = bert_emb.forward(system_prompt["input_ids"])
-
-    conf = PTBertConfig(
-        bert=bert,
-        head_layers=info["missing_keys"],
-        prefix_embeds=prefix_embeds,
-    )
-
-    return PTBert(conf)
-
-
 def main(
     prefix_random_init: bool,
     pretrained_model: str,
     out_dir: str,
     epochs: int,
-    train_split: str,
-    eval_split: str,
-    test_split: str,
 ):
     logger.info("load tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
 
-    multinerd = Multinerd(
-        tokenizer=tokenizer,
-        system_prompt="none",
-        train_split=train_split,
-        eval_split=eval_split,
-        test_split=test_split,
-    )
-
+    multinerd = Multinerd(tokenizer=tokenizer, system_prompt="none")
     logger.info("train samples: %d", len(multinerd.train))
     logger.info("eval samples:  %d", len(multinerd.eval))
     logger.info("test samples:  %d", len(multinerd.test))
 
     logger.info("load %s", pretrained_model)
     if "checkpoint" in pretrained_model:
-        pt_bert = PTBert.from_pretrained(pretrained_model)
-    else:
-        pt_bert = _setup_pt_bert(
-            base_model=pretrained_model,
-            prefix_random_init=prefix_random_init,
-            tokenizer=tokenizer,
+        config = PTBertConfig.from_pretrained(pretrained_model)
+        pt_bert = PTBertSequenceClassification.from_pretrained(
+            pretrained_model,
+            config=config,
         )
+    else:
+        bert, info = AutoModelForSequenceClassification.from_pretrained(
+            pretrained_model,
+            num_labels=len(Multinerd.ID2LABEL),
+            id2label=cast(dict[int, str], Multinerd.ID2LABEL),
+            label2id=cast(dict[str, int], Multinerd.LABEL2ID),
+            output_loading_info=True,
+        )
+
+        system_tokens = tokenizer(Multinerd.SYSTEM_PROMPT, return_tensors="pt")
+        system_ids = system_tokens["input_ids"]
+
+        logger.info("init pt-bert")
+        config = PTBertConfig(
+            pretrained_model=pretrained_model,
+            num_virtual_tokens=system_ids.size(1),
+            num_labels=len(Multinerd.ID2LABEL),
+            id2label=cast(dict[int, str], Multinerd.ID2LABEL),
+            label2id=cast(dict[str, int], Multinerd.LABEL2ID),
+        )
+
+        pt_bert = PTBertSequenceClassification(config=config)
+
+        logger.info("freeze base bert")
+        logger.info("skip %s", info["missing_keys"])
+        for name, param in pt_bert.bert.named_parameters():
+            param.requires_grad = name in info["missing_keys"]
+
+        logger.info("init prefix")
+        bert_emb = bert.get_input_embeddings()
+        if prefix_random_init:
+            prefix = torch.randn(1, system_ids.size(1), bert_emb.embedding_dim)
+        else:
+            prefix = bert_emb(system_ids).detach()
+
+        pt_bert.bert.load_state_dict(bert.state_dict(), strict=False)
+        pt_bert.prefix = Parameter(prefix)
 
     _log_params(model=pt_bert)
 
