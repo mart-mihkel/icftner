@@ -1,71 +1,90 @@
 import marimo
 
-__generated_with = "0.19.6"
+__generated_with = "0.19.7"
 app = marimo.App()
 
-with app.setup:
-    from typing import Annotated, cast
 
+@app.cell
+def _():
+    from typing import cast
+
+    import marimo as mo
     from torch import Tensor
     from transformers import (
         AutoModel,
         AutoTokenizer,
-        ModernBertModel,
+        BertModel,
         PreTrainedTokenizer,
     )
 
     from icft.datasets.multinerd import Multinerd
 
-
-@app.function
-def encode_prefix(
-    prefix: str,
-    model: ModernBertModel,
-    tokenizer: PreTrainedTokenizer,
-) -> Annotated[Tensor, "prefix emb"]:
-    prefix_tokenized = tokenizer(prefix, return_tensors="pt")
-    token_ids = prefix_tokenized["input_ids"][0]
-    return model.get_input_embeddings().forward(token_ids)
-
-
-@app.function
-def decode_prefix(
-    prefix_embeddings: Annotated[Tensor, "prefix emb"],
-    model: ModernBertModel,
-    tokenizer: PreTrainedTokenizer,
-) -> str | list[str]:
-    voc_embeddings = cast(Tensor, model.get_input_embeddings().weight)
-    similarity = prefix_embeddings @ voc_embeddings.T
-    token_ids = similarity.argmax(dim=1)
-    return tokenizer.decode(token_ids=token_ids)
+    return (
+        AutoModel,
+        AutoTokenizer,
+        BertModel,
+        Multinerd,
+        PreTrainedTokenizer,
+        Tensor,
+        cast,
+        mo,
+    )
 
 
 @app.cell
-def _():
-    # _pretrained_model = "out/pt-multinerd-mmbert-base/checkpoint-355265"
+def _(BertModel, PreTrainedTokenizer, Tensor):
+    def encode_prefix(
+        prefix: str,
+        model: BertModel,
+        tokenizer: PreTrainedTokenizer,
+    ) -> Tensor:
+        prefix_tokenized = tokenizer(prefix, return_tensors="pt")
+        token_ids = prefix_tokenized["input_ids"][0]
+        return model.get_input_embeddings().forward(token_ids)
+
+    return (encode_prefix,)
+
+
+@app.cell
+def _(BertModel, PreTrainedTokenizer, Tensor, cast):
+    def decode_prefix(
+        prefix_embeddings: Tensor,
+        model: BertModel,
+        tokenizer: PreTrainedTokenizer,
+    ) -> str | list[str]:
+        voc_embeddings = cast(Tensor, model.get_input_embeddings().weight)
+        similarity = prefix_embeddings @ voc_embeddings.T
+        token_ids = similarity.argmax(dim=1)
+        return tokenizer.decode(token_ids=token_ids)
+
+    return (decode_prefix,)
+
+
+@app.cell
+def _(AutoModel, AutoTokenizer):
     _pretrained_model = "jhu-clsp/mmBERT-base"
     tokenizer = AutoTokenizer.from_pretrained(_pretrained_model)
-    model = AutoModel.from_pretrained(
-        _pretrained_model,
-        trust_remote_code=True,
-        use_safetensors=True,
-    )
+    model = AutoModel.from_pretrained(_pretrained_model)
     return model, tokenizer
 
 
 @app.cell
-def _(model, tokenizer):
+def _(Multinerd, decode_prefix, encode_prefix, mo, model, tokenizer):
     _prefix_embeddings = encode_prefix(
         prefix=Multinerd.SYSTEM_PROMPT,
         model=model,
         tokenizer=tokenizer,
     )
 
-    decode_prefix(
+    _prefix_decoded = decode_prefix(
         prefix_embeddings=_prefix_embeddings,
         model=model,
         tokenizer=tokenizer,
     )
+
+    print(_prefix_decoded)
+
+    mo.md("Decoded mmBERT system prompt embeddings using cosine similarity")
     return
 
 
