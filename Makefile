@@ -1,6 +1,7 @@
-TB_LOG_DIR = out
-NOTEBOOK_DIR = notebooks
-DOCUMENT_VIEWER = zathura
+REMOTE ?=
+LOGDIR = out
+NOTEBOOKS = notebooks
+PDF_VIEWER = zathura
 
 install:
 	uv sync
@@ -12,10 +13,19 @@ pre-commit:
 	uv run ty check
 
 marimo:
-	uv run marimo edit $(NOTEBOOK_DIR)
+	uv run marimo edit $(NOTEBOOKS)
 
 tensorboard:
-	uv run tensorboard --logdir $(TB_LOG_DIR)
+	uv run tensorboard --logdir $(LOGDIR)
 
 typst:
-	typst watch typesetting/main.typ --open $(DOCUMENT_VIEWER)
+	typst watch typesetting/main.typ --open $(PDF_VIEWER)
+
+upload:
+	rsync -rv --exclude-from '.gitignore' . $(REMOTE)
+
+download-out:
+	rsync -rv $(REMOTE)/$(LOGDIR) .
+
+download-tensorboard:
+	rsync -rv --exclude 'checkpoint-*' --exclude 'slurm' $(REMOTE)/$(LOGDIR) .

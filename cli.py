@@ -3,14 +3,14 @@ from typing import Annotated, Literal
 
 from typer import Option, Typer
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Typer(
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_show_locals=False,
 )
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 @app.command(help="Export tensorboard scalars to csv")
@@ -21,14 +21,14 @@ def export_tensorboard(logdir: str, outfile: str = "tb.csv"):
 
 
 @app.command(
-    help="Fine tune a pretrained bert model for sequence classification on MultiNERD dataset"
+    help="Fine-tune a pretrained bert model for sequence classification on MultiNERD dataset"
 )
 def fine_tune_bert_multinerd(
     system_prompt: Literal["ner", "random", "none"] = "none",
     head_only: Annotated[
         bool, Option(help="If set freeze all parameters except classifier head")
     ] = False,
-    pretrained_model: str = "distilbert-base-uncased",
+    pretrained_model: str = "distilbert/distilbert-base-uncased",
     out_dir: str = "out/fine-tune",
     epochs: int = 1,
 ):
@@ -44,7 +44,7 @@ def fine_tune_bert_multinerd(
 
 
 @app.command(
-    help="P-tune a pretrained bert model for sequence classification on MultiNERD dataset"
+    help="Prompt-tune a pretrained bert model for sequence classification on MultiNERD dataset"
 )
 def prompt_tune_bert_multinerd(
     prefix_random_init: Annotated[
@@ -53,8 +53,8 @@ def prompt_tune_bert_multinerd(
             help="If not set intialize prefix tensor from --pretrained_model embedding layer"
         ),
     ] = False,
-    pretrained_model: str = "distilbert-base-uncased",
-    out_dir: str = "out/prefix-tune",
+    pretrained_model: str = "distilbert/distilbert-base-uncased",
+    out_dir: str = "out/prompt-tune",
     epochs: int = 1,
 ):
     from icft.scripts.prompt_tune_bert_multinerd import main

@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Literal
 
-from transformers import AutoTokenizer, DataCollatorWithPadding, PreTrainedModel
+from transformers import AutoTokenizer, DataCollatorWithPadding
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
@@ -10,13 +10,6 @@ from transformers.training_args import TrainingArguments
 from icft.datasets.multinerd import Multinerd
 
 logger = logging.getLogger(__name__)
-
-
-def _log_params(model: PreTrainedModel):
-    total = sum(p.numel() for p in model.parameters())
-    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info("total params:     %d", total)
-    logger.info("trainable params: %d", trainable)
 
 
 def main(
@@ -49,7 +42,10 @@ def main(
         for name, param in bert.named_parameters():
             param.requires_grad = name in info["missing_keys"]
 
-    _log_params(model=bert)
+    total = sum(p.numel() for p in bert.parameters())
+    trainable = sum(p.numel() for p in bert.parameters() if p.requires_grad)
+    logger.info("total params:     %d", total)
+    logger.info("trainable params: %d", trainable)
 
     logger.info("init trainer")
     os.environ["TENSORBOARD_LOGGING_DIR"] = f"{out_dir}/tensorboard"

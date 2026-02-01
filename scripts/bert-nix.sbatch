@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-#SBATCH --output=out/slurm/icft-%j.out
+#SBATCH --output=out/slurm/mmbert-%j.out
 
 set -euo pipefail
 mkdir -p out
 
-# BASE_MODEL=boltuix/bert-micro
 # BASE_MODEL=distilbert/distilbert-base-uncased
+# BASE_MODEL=jhu-clsp/mmBERT-small
 BASE_MODEL=jhu-clsp/mmBERT-base
 DIR_NAME=$(echo $BASE_MODEL | tr / -)
 
