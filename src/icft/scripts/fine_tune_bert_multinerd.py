@@ -20,10 +20,10 @@ def _freeze_model(model: PreTrainedModel, skip_layers: set[str]):
 
 
 def _log_params(model: PreTrainedModel):
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info("total params:     %d", total_params)
-    logger.info("trainable params: %d", trainable_params)
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logger.info("total params:     %d", total)
+    logger.info("trainable params: %d", trainable)
 
 
 def main(
@@ -61,7 +61,7 @@ def main(
     )
 
     if head_only:
-        _freeze_model(model=bert, skip_layers=info["unexpected_keys"])
+        _freeze_model(model=bert, skip_layers=info["missing_keys"])
 
     _log_params(model=bert)
 

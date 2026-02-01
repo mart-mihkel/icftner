@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 def _log_params(model: PreTrainedModel):
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info("total params:     %d", total_params)
-    logger.info("trainable params: %d", trainable_params)
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logger.info("total params:     %d", total)
+    logger.info("trainable params: %d", trainable)
 
 
 def _setup_pt_bert(
@@ -50,7 +50,7 @@ def _setup_pt_bert(
 
     conf = PTBertConfig(
         bert=bert,
-        head_layers=info["unexpected_keys"],
+        head_layers=info["missing_keys"],
         prefix_embeds=prefix_embeds,
     )
 
