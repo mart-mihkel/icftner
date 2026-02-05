@@ -83,7 +83,7 @@ def main(
     logger.info("trainable params: %d", trainable)
 
     logger.info("init trainer")
-    os.environ["TENSORBOARD_LOGGING_DIR"] = f"{out_dir}/tensorboard"
+    os.environ["TENSORBOARD_LOGGING_DIR"] = out_dir
     args = TrainingArguments(
         output_dir=out_dir,
         report_to="tensorboard",
